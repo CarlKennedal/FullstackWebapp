@@ -9,18 +9,19 @@ public class AppDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Customer> Customers => Set<Customer>();
-    public DbSet<Order> Orders => Set<Order>(); // Add this line
+    public DbSet<Order> Orders => Set<Order>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configure relationships
-        modelBuilder.Entity<Order>()
-            .HasOne(o => o.Customer)
-            .WithMany()
-            .HasForeignKey(o => o.CustomerId);
-
+        // Configure composite primary key
         modelBuilder.Entity<OrderItem>()
             .HasKey(oi => new { oi.OrderId, oi.ProductId }); // Composite key
+
+        // Configure relationships
+        modelBuilder.Entity<OrderItem>()
+            .HasOne(oi => oi.Order)
+            .WithMany(o => o.Items)
+            .HasForeignKey(oi => oi.OrderId);
 
         modelBuilder.Entity<OrderItem>()
             .HasOne(oi => oi.Product)

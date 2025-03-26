@@ -27,7 +27,6 @@ public class OrdersController : ControllerBase
         _context = context;
     }
 
-    // GET: api/orders
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -36,11 +35,9 @@ public class OrdersController : ControllerBase
             .Include(o => o.Items)
             .ThenInclude(oi => oi.Product)
             .ToListAsync();
-
         return Ok(orders);
     }
 
-    // GET: api/orders/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -49,30 +46,27 @@ public class OrdersController : ControllerBase
             .Include(o => o.Items)
             .ThenInclude(oi => oi.Product)
             .FirstOrDefaultAsync(o => o.Id == id);
-
         return order == null ? NotFound() : Ok(order);
     }
 
-    // POST: api/orders
     [HttpPost]
     public async Task<IActionResult> Create(Order order)
     {
-        // Validate customer exists
-        if (!await _customerRepository.GetAllAsync().AnyAsync(c => c.Id == order.CustomerId))
-            return BadRequest("Customer not found");
+        // Fix 1: Use _context directly for async checks
+        var customerExists = await _context.Customers.AnyAsync(c => c.Id == order.CustomerId);
+        if (!customerExists) return BadRequest("Customer not found");
 
-        // Validate products exist
+        // Fix 2: Check products using _context
         foreach (var item in order.Items)
         {
-            if (!await _productRepository.GetAllAsync().AnyAsync(p => p.Id == item.ProductId))
-                return BadRequest($"Product {item.ProductId} not found");
+            var productExists = await _context.Products.AnyAsync(p => p.Id == item.ProductId);
+            if (!productExists) return BadRequest($"Product {item.ProductId} not found");
         }
 
         await _orderRepository.AddAsync(order);
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
     }
 
-    // DELETE: api/orders/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
