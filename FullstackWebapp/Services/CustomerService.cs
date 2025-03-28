@@ -25,7 +25,7 @@ public class CustomerService(IRepository<Customer> customerRepo)
         if (await EmailExistsAsync(customer.Email))
             throw new ValidationException("Email already exists");
 
-        // Validate mobile phone format (example)
+        // Validate mobile phone format
         if (!IsValidPhoneNumber(customer.MobilePhone))
             throw new ValidationException("Invalid phone number format");
 

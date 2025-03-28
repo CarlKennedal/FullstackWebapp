@@ -15,7 +15,6 @@ public class CustomersController : ControllerBase
         _repository = repository;
     }
 
-    // GET: api/customers
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -23,7 +22,6 @@ public class CustomersController : ControllerBase
         return Ok(customers);
     }
 
-    // GET: api/customers/5
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -31,7 +29,6 @@ public class CustomersController : ControllerBase
         return customer == null ? NotFound() : Ok(customer);
     }
 
-    // POST: api/customers
     [HttpPost]
     public async Task<IActionResult> Create(Customer customer)
     {
@@ -39,7 +36,6 @@ public class CustomersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = customer.Id }, customer);
     }
 
-    // PUT: api/customers/5
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, Customer customer)
     {
@@ -48,7 +44,6 @@ public class CustomersController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/customers/5
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

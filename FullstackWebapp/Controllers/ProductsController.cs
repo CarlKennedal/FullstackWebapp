@@ -11,23 +11,41 @@ public class ProductsController : ControllerBase
 {
     private readonly ProductService _productService;
 
-    // Inject ProductService via constructor
     public ProductsController(ProductService productService)
     {
         _productService = productService;
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<Product>))]
+    public async Task<IActionResult> GetAllProducts()
     {
-        var product = await _productService.GetProductByIdAsync(id);
-        return product == null ? NotFound() : Ok(product);
+        var products = await _productService.GetAllProductsAsync();
+        return Ok(products);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Product product)
+    [HttpGet("{identifier}")] 
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Product))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProduct(string identifier)
     {
-        await _productService.AddProductAsync(product);
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+        if (int.TryParse(identifier, out var id))
+        {
+            var productById = await _productService.GetProductByIdAsync(id);
+            return productById != null ? Ok(productById) : NotFound();
+        }
+
+        var productByName = await _productService.GetProductByNameAsync(identifier);
+        return productByName != null ? Ok(productByName) : NotFound();
+    }
+
+
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var success = await _productService.DeleteProductAsync(id);
+        return success ? NoContent() : NotFound();
     }
 }

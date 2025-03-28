@@ -52,11 +52,9 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(Order order)
     {
-        // Fix 1: Use _context directly for async checks
         var customerExists = await _context.Customers.AnyAsync(c => c.Id == order.CustomerId);
         if (!customerExists) return BadRequest("Customer not found");
 
-        // Fix 2: Check products using _context
         foreach (var item in order.Items)
         {
             var productExists = await _context.Products.AnyAsync(p => p.Id == item.ProductId);

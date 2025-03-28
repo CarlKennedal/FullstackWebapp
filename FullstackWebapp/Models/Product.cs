@@ -12,7 +12,8 @@ public class Product
     public string ProductNumber { get; set; }
 
     [Required]
-    public string Name { get; set; }
+    [StringLength(100)]
+    public string Name { get; set; } = string.Empty;
 
     [Required]
     public string Description { get; set; }
