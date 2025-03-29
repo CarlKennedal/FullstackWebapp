@@ -5,45 +5,63 @@ using System.ComponentModel.DataAnnotations;
 
 public class CustomerService(IRepository<Customer> customerRepo)
 {
-    public async Task<IEnumerable<Customer>> GetAllCustomersAsync() => await customerRepo.GetAllAsync();
-    public async Task<Customer?> GetCustomerByIdAsync(int id) => await customerRepo.GetByIdAsync(id);
-    public async Task DeleteCustomerAsync(int id) => await customerRepo.DeleteAsync(id);
+    public async Task<IEnumerable<Customer>> GetAllCustomersAsync()
+        => await customerRepo.GetAllAsync();
+
+    public async Task<Customer?> GetCustomerByIdAsync(int id)
+        => await customerRepo.GetByIdAsync(id);
+
+    public async Task<bool> DeleteCustomerAsync(int id)
+    {
+        var customer = await customerRepo.GetByIdAsync(id);
+        if (customer == null) return false;
+
+        await customerRepo.DeleteAsync(id);
+        await customerRepo.SaveChangesAsync();
+        return true;
+    }
 
     public async Task<IEnumerable<Customer>> SearchCustomersAsync(string query)
     {
-        var customers = await customerRepo.GetAllAsync();
-        return customers.Where(c =>
-            c.FirstName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-            c.Surname.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-            c.Email.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-            c.MobilePhone.Contains(query, StringComparison.OrdinalIgnoreCase)
-        );
+        return await customerRepo.AsQueryable()
+            .Where(c =>
+                c.FirstName.Contains(query) ||
+                c.LastName.Contains(query) ||
+                c.Email.Contains(query) ||
+                c.MobilePhone.Contains(query))
+            .ToListAsync();
     }
-    public async Task AddCustomerAsync(Customer customer)
-    {
-        // Validate email uniqueness
-        if (await EmailExistsAsync(customer.Email))
-            throw new ValidationException("Email already exists");
 
-        // Validate mobile phone format
+    public async Task<Customer> AddCustomerAsync(Customer customer)
+    {
+        if (await EmailExistsAsync(customer.Email))
+            throw new ValidationException("Email exists");
         if (!IsValidPhoneNumber(customer.MobilePhone))
-            throw new ValidationException("Invalid phone number format");
+            throw new ValidationException("Invalid phone number");
 
         await customerRepo.AddAsync(customer);
+        await customerRepo.SaveChangesAsync();
+        return customer;
     }
 
     public async Task UpdateCustomerAsync(Customer customer)
     {
-        // Check if customer exists
         var existing = await customerRepo.GetByIdAsync(customer.Id);
         if (existing == null)
             throw new KeyNotFoundException("Customer not found");
 
-        // Validate email uniqueness (if changed)
         if (existing.Email != customer.Email && await EmailExistsAsync(customer.Email))
-            throw new ValidationException("Email already exists");
+            throw new ValidationException("Email exists");
 
-        await customerRepo.UpdateAsync(customer);
+        if (!IsValidPhoneNumber(customer.MobilePhone))
+            throw new ValidationException("Invalid phone number");
+
+        existing.FirstName = customer.FirstName;
+        existing.LastName = customer.LastName;
+        existing.Email = customer.Email;
+        existing.MobilePhone = customer.MobilePhone;
+
+        await customerRepo.SaveChangesAsync();
     }
 
     private async Task<bool> EmailExistsAsync(string email)

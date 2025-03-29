@@ -10,7 +10,9 @@ public class Repository<T>(AppDbContext context) : IRepository<T> where T : clas
     public async Task<T?> GetByIdAsync(int id) => await _dbSet.FindAsync(id);
     public async Task AddAsync(T entity) => await _dbSet.AddAsync(entity);
     public async Task UpdateAsync(T entity) => _dbSet.Update(entity);
-    public IQueryable<T> AsQueryable() => _dbSet;
+    public async Task SaveChangesAsync()
+    => await context.SaveChangesAsync();
+    public IQueryable<T> AsQueryable() => context.Set<T>().AsQueryable();
     public async Task DeleteAsync(int id)
     {
         var entity = await GetByIdAsync(id);
