@@ -3,6 +3,7 @@ using FullstackWebapp.Models;
 using FullstackWebapp.Repositories;
 using FullstackWebapp.Services;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace FullstackWebapp.Controllers;
 [ApiController]
@@ -39,6 +40,38 @@ public class ProductsController : ControllerBase
         return productByName != null ? Ok(productByName) : NotFound();
     }
 
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] Product product)
+    {
+        await _productService.AddProductAsync(product);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+    }
+
+    [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product product)
+    {
+        if (id != product.Id)
+        {
+            return BadRequest("ID in URL does not match product ID");
+        }
+
+        try
+        {
+            await _productService.UpdateProductAsync(product);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -10,65 +10,52 @@ namespace FullstackWebapp.Controllers;
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
-    private readonly IRepository<Order> _orderRepository;
-    private readonly IRepository<Customer> _customerRepository;
-    private readonly IRepository<Product> _productRepository;
-    private readonly AppDbContext _context;
+    private readonly OrderService _orderService;
 
-    public OrdersController(
-        IRepository<Order> orderRepository,
-        IRepository<Customer> customerRepository,
-        IRepository<Product> productRepository,
-        AppDbContext context)
+    public OrdersController(OrderService orderService)
     {
-        _orderRepository = orderRepository;
-        _customerRepository = customerRepository;
-        _productRepository = productRepository;
-        _context = context;
+        _orderService = orderService;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] Order order)
     {
-        var orders = await _context.Orders
-            .Include(o => o.Customer)
-            .Include(o => o.Items)
-            .ThenInclude(oi => oi.Product)
-            .ToListAsync();
-        return Ok(orders);
+        var (createdOrder, error) = await _orderService.CreateOrder(order);
+        if (error != null) return BadRequest(error);
+        return CreatedAtAction(nameof(GetById), new { id = createdOrder.Id }, createdOrder);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var order = await _context.Orders
-            .Include(o => o.Customer)
-            .Include(o => o.Items)
-            .ThenInclude(oi => oi.Product)
-            .FirstOrDefaultAsync(o => o.Id == id);
-        return order == null ? NotFound() : Ok(order);
+        var orders = await _orderService.SearchOrders(orderId: id);
+        return orders.Count > 0 ? Ok(orders[0]) : NotFound();
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create(Order order)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] Order order)
     {
-        var customerExists = await _context.Customers.AnyAsync(c => c.Id == order.CustomerId);
-        if (!customerExists) return BadRequest("Customer not found");
+        if (id != order.Id) return BadRequest("ID mismatch");
 
-        foreach (var item in order.Items)
-        {
-            var productExists = await _context.Products.AnyAsync(p => p.Id == item.ProductId);
-            if (!productExists) return BadRequest($"Product {item.ProductId} not found");
-        }
-
-        await _orderRepository.AddAsync(order);
-        return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+        var (success, error) = await _orderService.UpdateOrder(id, order);
+        if (!success) return BadRequest(error);
+        return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        await _orderRepository.DeleteAsync(id);
-        return NoContent();
+        var success = await _orderService.DeleteOrder(id);
+        return success ? NoContent() : NotFound();
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> Search(
+        [FromQuery] int? orderId,
+        [FromQuery] int? customerId,
+        [FromQuery] int? productId)
+    {
+        var orders = await _orderService.SearchOrders(orderId, customerId, productId);
+        return Ok(orders);
     }
 }

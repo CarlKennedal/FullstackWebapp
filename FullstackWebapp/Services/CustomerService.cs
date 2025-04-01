@@ -21,15 +21,31 @@ public class CustomerService(IRepository<Customer> customerRepo)
         return true;
     }
 
-    public async Task<IEnumerable<Customer>> SearchCustomersAsync(string query)
+    public async Task<IEnumerable<Customer>> SearchCustomersAsync(
+     int? id = null,
+     string? firstName = null,
+     string? lastName = null,
+     string? email = null,
+     string? phone = null)
     {
-        return await customerRepo.AsQueryable()
-            .Where(c =>
-                c.FirstName.Contains(query) ||
-                c.LastName.Contains(query) ||
-                c.Email.Contains(query) ||
-                c.MobilePhone.Contains(query))
-            .ToListAsync();
+        var query = customerRepo.AsQueryable();
+
+        if (id.HasValue)
+            query = query.Where(c => c.Id == id.Value);
+
+        if (!string.IsNullOrEmpty(firstName))
+            query = query.Where(c => c.FirstName.Contains(firstName));
+
+        if (!string.IsNullOrEmpty(lastName))
+            query = query.Where(c => c.LastName.Contains(lastName));
+
+        if (!string.IsNullOrEmpty(email))
+            query = query.Where(c => c.Email.Contains(email));
+
+        if (!string.IsNullOrEmpty(phone))
+            query = query.Where(c => c.MobilePhone.Contains(phone));
+
+        return await query.ToListAsync();
     }
 
     public async Task<Customer> AddCustomerAsync(Customer customer)
@@ -60,6 +76,7 @@ public class CustomerService(IRepository<Customer> customerRepo)
         existing.LastName = customer.LastName;
         existing.Email = customer.Email;
         existing.MobilePhone = customer.MobilePhone;
+        existing.Addresses = customer.Addresses;
 
         await customerRepo.SaveChangesAsync();
     }

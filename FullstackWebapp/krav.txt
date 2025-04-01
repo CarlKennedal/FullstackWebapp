@@ -1,0 +1,19 @@
+klar    Det ska gå att skapa nya proukter som lagras i en databas(SQL-Server eller MongoDB)
+
+    Det ska gå att ändra och ta bort produkter i databasen
+    
+klar    Det ska gå att markera att produkter utgått ur sortimentet
+    
+klar    Det ska gå att hämta alla produkter
+    
+    Det ska gå att söka efter en produkt på produktens namn eller produktnummer
+    
+klar    Kunder ska kunna registrera sig och uppgifterna skall lagras i databasen.
+    
+klar    Kunder ska kunna uppdatera sina uppgifter
+    
+klar    Det ska gå att lista alla Kunder
+    
+klar    Det ska gå söka efter kunder på e-post adress
+    
+    När en kund köper något/placerar en order måste vi kunna spåra vilken/vilka produkter som kunden har köpt

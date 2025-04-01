@@ -58,4 +58,31 @@ public class CustomersController : ControllerBase
         var success = await _customerService.DeleteCustomerAsync(id);
         return success ? NoContent() : NotFound();
     }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> SearchCustomers(
+     [FromQuery] int? id,
+     [FromQuery] string? firstName,
+     [FromQuery] string? lastName,
+     [FromQuery] string? email,
+     [FromQuery] string? phone)
+    {
+        if (id == null &&
+            string.IsNullOrEmpty(firstName) &&
+            string.IsNullOrEmpty(lastName) &&
+            string.IsNullOrEmpty(email) &&
+            string.IsNullOrEmpty(phone))
+        {
+            return BadRequest("Please provide at least one search parameter");
+        }
+
+        var customers = await _customerService.SearchCustomersAsync(
+            id: id,
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            phone: phone);
+
+        return Ok(customers);
+    }
 }
