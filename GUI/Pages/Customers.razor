@@ -1,0 +1,234 @@
+﻿@page "/customers"
+@inject ApiService ApiService
+
+<h3>Customers</h3>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowCreateModal">Add New Customer</button>
+</div>
+
+@if (customers == null)
+{
+    <p>Loading customers...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Addresses</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in customers)
+            {
+                <tr>
+                    <td>@customer.Id</td>
+                    <td>@customer.FirstName @customer.LastName</td>
+                    <td>@customer.Email</td>
+                    <td>@customer.MobilePhone</td>
+                    <td>
+                        @if (customer.Addresses != null && customer.Addresses.Any())
+                        {
+                            <ul class="list-unstyled">
+                                @foreach (var address in customer.Addresses.Take(2))
+                                {
+                                    <li>@address</li>
+                                }
+                                @if (customer.Addresses.Count > 2)
+                                {
+                                    <li>+@(customer.Addresses.Count - 2) more</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <span class="text-muted">None</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info" @onclick="() => ViewCustomer(customer.Id)">View</button>
+                        <button class="btn btn-sm btn-warning" @onclick="() => EditCustomer(customer)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteCustomer(customer.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<!-- Create/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal show" style="display: block; background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(currentCustomer.Id == 0 ? "Create" : "Edit") Customer</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@currentCustomer" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">First Name</label>
+                                    <InputText class="form-control" @bind-Value="currentCustomer.FirstName" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Last Name</label>
+                                    <InputText class="form-control" @bind-Value="currentCustomer.LastName" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <InputText class="form-control" @bind-Value="currentCustomer.Email" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Mobile Phone</label>
+                                    <InputText class="form-control" @bind-Value="currentCustomer.MobilePhone" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Addresses</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    @for (int i = 0; i < currentCustomer.Addresses.Count; i++)
+                                    {
+                                        <div class="input-group mb-2">
+                                            <InputText class="form-control" @bind-Value="currentCustomer.Addresses[i]" />
+                                            <button type="button" class="btn btn-outline-danger"
+                                                    @onclick="() => RemoveAddress(i)">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    }
+                                    <button type="button" class="btn btn-sm btn-secondary"
+                                            @onclick="AddAddress">
+                                        Add Address
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Customer>? customers;
+    private bool showModal = false;
+    private Customer currentCustomer = new()
+        {
+            FirstName = string.Empty,
+            LastName = string.Empty,
+            Email = string.Empty,
+            MobilePhone = string.Empty,
+            Addresses = new List<string>()
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomers();
+    }
+
+    private async Task LoadCustomers()
+    {
+        customers = await ApiService.GetCustomersAsync();
+    }
+
+    private void ShowCreateModal()
+    {
+        currentCustomer = new Customer
+            {
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                Email = string.Empty,
+                MobilePhone = string.Empty,
+                Addresses = new List<string>()
+            };
+        showModal = true;
+    }
+
+    private void EditCustomer(Customer customer)
+    {
+        currentCustomer = new Customer
+            {
+                Id = customer.Id,
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                Email = customer.Email,
+                MobilePhone = customer.MobilePhone,
+                Addresses = new List<string>(customer.Addresses ?? new List<string>())
+            };
+        showModal = true;
+    }
+
+    private void AddAddress()
+    {
+        currentCustomer.Addresses.Add(string.Empty);
+    }
+
+    private void RemoveAddress(int index)
+    {
+        if (index >= 0 && index < currentCustomer.Addresses.Count)
+        {
+            currentCustomer.Addresses.RemoveAt(index);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (currentCustomer.Id == 0)
+        {
+            await ApiService.CreateCustomerAsync(currentCustomer);
+        }
+        else
+        {
+            await ApiService.UpdateCustomerAsync(currentCustomer);
+        }
+        showModal = false;
+        await LoadCustomers();
+    }
+
+    private async Task DeleteCustomer(int id)
+    {
+        if (await ApiService.DeleteCustomerAsync(id))
+        {
+            await LoadCustomers();
+        }
+    }
+
+    private void ViewCustomer(int id)
+    {
+        // Navigation to customer details would go here
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+}

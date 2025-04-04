@@ -1,0 +1,141 @@
+﻿@page "/products"
+@inject ApiService ApiService
+
+<h3>Products</h3>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ShowCreateModal">Add New Product</button>
+</div>
+
+@if (products == null)
+{
+    <p>Loading products...</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in products)
+            {
+                <tr>
+                    <td>@product.Id</td>
+                    <td>@product.Name</td>
+                    <td>@product.Description</td>
+                    <td>@product.Price.ToString("C")</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" @onclick="() => EditProduct(product)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteProduct(product.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<!-- Create/Edit Modal -->
+@if (showModal)
+{
+    <div class="modal show" style="display: block; background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(currentProduct.Id == 0 ? "Create" : "Edit") Product</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@currentProduct" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <InputText id="name" class="form-control" @bind-Value="currentProduct.Name" />
+                            <ValidationMessage For="@(() => currentProduct.Name)" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <InputTextArea id="description" class="form-control" @bind-Value="currentProduct.Description" />
+                        </div>
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Price</label>
+                            <InputNumber id="price" class="form-control" @bind-Value="currentProduct.Price" />
+                            <ValidationMessage For="@(() => currentProduct.Price)" />
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Product>? products;
+    private bool showModal = false;
+    private Product currentProduct = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        products = await ApiService.GetProductsAsync();
+    }
+
+    private void ShowCreateModal()
+    {
+        currentProduct = new Product();
+        showModal = true;
+    }
+
+    private void EditProduct(Product product)
+    {
+        currentProduct = new Product
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price
+            };
+        showModal = true;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (currentProduct.Id == 0)
+        {
+            await ApiService.CreateProductAsync(currentProduct);
+        }
+        else
+        {
+            await ApiService.UpdateProductAsync(currentProduct);
+        }
+        showModal = false;
+        await LoadProducts();
+    }
+
+    private async Task DeleteProduct(int id)
+    {
+        if (await ApiService.DeleteProductAsync(id))
+        {
+            await LoadProducts();
+        }
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+}

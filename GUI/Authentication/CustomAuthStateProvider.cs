@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Authorization;
+using FullstackWebapp.GUI.Services;
 using Blazored.LocalStorage;
 
 public class CustomAuthStateProvider : AuthenticationStateProvider
