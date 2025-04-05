@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Blazored.LocalStorage;
 using FullstackWebapp.GUI.Services;
 using GUI;
+using System.Text.Json;
 
 namespace FullstackWebapp.GUI;
-
 public class Program
 {
     public static async Task Main(string[] args)
@@ -15,11 +15,30 @@ public class Program
         builder.RootComponents.Add<App>("#app");
         builder.RootComponents.Add<HeadOutlet>("head::after");
 
+        var http = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
+        var apiBaseUrl = "https://localhost:7038";
+
+        try
+        {
+            var appSettingsResponse = await http.GetAsync("appsettings.Development.json");
+            var appSettingsJson = await appSettingsResponse.Content.ReadAsStringAsync();
+            var appSettings = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(appSettingsJson);
+
+            apiBaseUrl = appSettings.TryGetValue("ApiBaseUrl", out var urlValue)
+                ? urlValue.GetString() ?? "https://localhost:7040"
+                : "https://localhost:7038";
+        }
+        catch
+        {
+            Console.WriteLine("Warning: Using default API URL");
+        }
+
         builder.Services.AddHttpClient("API", client =>
         {
-            client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7278");
+            client.BaseAddress = new Uri(apiBaseUrl);
         });
 
+        // Register services
         builder.Services.AddScoped<ApiService>();
         builder.Services.AddOptions();
         builder.Services.AddAuthorizationCore();

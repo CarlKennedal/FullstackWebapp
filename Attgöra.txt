@@ -1,4 +1,4 @@
-Ta reda på hur du starta GUI ,ed koppling aktuell
-Lägga till länkar i homepage
+Ta reda på hur du starta GUI ,m ed koppling aktiv
+Lägga till länkar i navmenu
 Städa bort skit, typ weather
 Pop-ups för att lägga till kunder typ "view order" "view customer" osv
