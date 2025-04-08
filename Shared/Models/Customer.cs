@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace FullstackWebapp.Shared.Models;
 
 public class Customer
@@ -7,5 +9,5 @@ public class Customer
     public required string LastName { get; set; }
     public required string Email { get; set; }
     public required string MobilePhone { get; set; }
-    public List<string> Addresses { get; set; } = new();
+    public required string Address { get; set; }
 }

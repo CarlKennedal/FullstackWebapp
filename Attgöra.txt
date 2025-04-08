@@ -1,4 +1,22 @@
-Ta reda på hur du starta GUI ,m ed koppling aktiv
+Ta reda på hur du starta GUI , med koppling aktiv
+De kopplar men bara produkter verkar laddas in i gui
+Fixa customers razor efter ändring från adrreser till adress(list till sträng)
+
+
 Lägga till länkar i navmenu
+Finns nu order, products och customer
+
+
+
+
+
 Städa bort skit, typ weather
+
+
+
+
+
+
 Pop-ups för att lägga till kunder typ "view order" "view customer" osv
+De finns men inte med all info, typ att de utgått sortimentet
+

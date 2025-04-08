@@ -12,9 +12,9 @@ public class OrderService
         IRepository<Customer> customerRepo,
         IRepository<Product> productRepo)
     {
-        orderRepo = _orderRepo;
-        customerRepo = _customerRepo;
-        productRepo = _productRepo;
+        _orderRepo = orderRepo;
+        _customerRepo = customerRepo;
+        _productRepo = productRepo;
     }
 
     public async Task<(Order? order, string? error)> CreateOrder(Order order)
@@ -38,6 +38,9 @@ public class OrderService
         await _orderRepo.SaveChangesAsync();
         return (order, null);
     }
+
+    public async Task<IEnumerable<Order>> GetAllOrdersAsync()
+    => await _orderRepo.GetAllAsync();
 
     public async Task<(bool success, string? error)> UpdateOrder(int orderId, Order updatedOrder)
     {

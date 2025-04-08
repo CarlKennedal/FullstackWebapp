@@ -40,14 +40,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", policy =>
     {
         policy.WithOrigins(
-                "https://localhost:7038", // API
-                "http://localhost:5248",  // API
-                "https://localhost:5001",  // GUI
-                "http://localhost:5000"   // GUI
+                "https://localhost:7040", // API HTTPS
+                "http://localhost:5250",  // API HTTP
+                "https://localhost:5001", // Common GUI ports
+                "http://localhost:5000"
             )
             .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+            .AllowAnyHeader();
     });
 });
 

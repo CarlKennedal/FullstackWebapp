@@ -25,6 +25,14 @@ public class OrdersController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = createdOrder.Id }, createdOrder);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var orders = await _orderService.GetAllOrdersAsync();
+        return Ok(orders);
+    }
+
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {

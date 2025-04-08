@@ -26,7 +26,8 @@ public class CustomerService(IRepository<Customer> customerRepo)
      string? firstName = null,
      string? lastName = null,
      string? email = null,
-     string? phone = null)
+     string? phone = null,
+     string? adress = null)
     {
         var query = customerRepo.AsQueryable();
 
@@ -44,6 +45,9 @@ public class CustomerService(IRepository<Customer> customerRepo)
 
         if (!string.IsNullOrEmpty(phone))
             query = query.Where(c => c.MobilePhone.Contains(phone));
+
+        if (!string.IsNullOrEmpty(adress))
+            query = query.Where(c => c.MobilePhone.Contains(adress));
 
         return await query.ToListAsync();
     }
@@ -76,7 +80,7 @@ public class CustomerService(IRepository<Customer> customerRepo)
         existing.LastName = customer.LastName;
         existing.Email = customer.Email;
         existing.MobilePhone = customer.MobilePhone;
-        existing.Addresses = customer.Addresses;
+        existing.Address = customer.Address;
 
         await customerRepo.SaveChangesAsync();
     }

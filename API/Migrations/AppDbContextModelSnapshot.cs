@@ -30,7 +30,7 @@ namespace FullstackWebapp.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.PrimitiveCollection<string>("Addresses")
+                    b.Property<string>("Addresses")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -42,17 +42,17 @@ namespace FullstackWebapp.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("MobilePhone")
+                    b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("LastName")
+                    b.Property<string>("MobilePhone")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("FullstackWebapp.Models.Order", b =>
@@ -73,7 +73,7 @@ namespace FullstackWebapp.Migrations
 
                     b.HasIndex("CustomerId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("FullstackWebapp.Models.OrderItem", b =>
@@ -91,7 +91,7 @@ namespace FullstackWebapp.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItem");
+                    b.ToTable("OrderItem", (string)null);
                 });
 
             modelBuilder.Entity("FullstackWebapp.Models.Product", b =>
@@ -126,7 +126,7 @@ namespace FullstackWebapp.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("FullstackWebapp.Models.Order", b =>

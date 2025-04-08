@@ -20,7 +20,7 @@ else
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
-                <th>Addresses</th>
+                <th>Address</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -33,18 +33,9 @@ else
                     <td>@customer.Email</td>
                     <td>@customer.MobilePhone</td>
                     <td>
-                        @if (customer.Addresses != null && customer.Addresses.Any())
+                        @if (!string.IsNullOrEmpty(customer.Address))
                         {
-                            <ul class="list-unstyled">
-                                @foreach (var address in customer.Addresses.Take(2))
-                                {
-                                    <li>@address</li>
-                                }
-                                @if (customer.Addresses.Count > 2)
-                                {
-                                    <li>+@(customer.Addresses.Count - 2) more</li>
-                                }
-                            </ul>
+                            @customer.Address
                         }
                         else
                         {
@@ -106,25 +97,8 @@ else
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Addresses</label>
-                            <div class="card">
-                                <div class="card-body">
-                                    @for (int i = 0; i < currentCustomer.Addresses.Count; i++)
-                                    {
-                                        <div class="input-group mb-2">
-                                            <InputText class="form-control" @bind-Value="currentCustomer.Addresses[i]" />
-                                            <button type="button" class="btn btn-outline-danger"
-                                                    @onclick="() => RemoveAddress(i)">
-                                                Remove
-                                            </button>
-                                        </div>
-                                    }
-                                    <button type="button" class="btn btn-sm btn-secondary"
-                                            @onclick="AddAddress">
-                                        Add Address
-                                    </button>
-                                </div>
-                            </div>
+                            <label class="form-label">Address</label>
+                            <InputText class="form-control" @bind-Value="currentCustomer.Address" />
                         </div>
 
                         <div class="modal-footer">
@@ -147,7 +121,7 @@ else
             LastName = string.Empty,
             Email = string.Empty,
             MobilePhone = string.Empty,
-            Addresses = new List<string>()
+            Address = string.Empty
         };
 
     protected override async Task OnInitializedAsync()
@@ -168,7 +142,7 @@ else
                 LastName = string.Empty,
                 Email = string.Empty,
                 MobilePhone = string.Empty,
-                Addresses = new List<string>()
+                Address = string.Empty
             };
         showModal = true;
     }
@@ -182,22 +156,9 @@ else
                 LastName = customer.LastName,
                 Email = customer.Email,
                 MobilePhone = customer.MobilePhone,
-                Addresses = new List<string>(customer.Addresses ?? new List<string>())
+                Address = customer.Address ?? string.Empty
             };
         showModal = true;
-    }
-
-    private void AddAddress()
-    {
-        currentCustomer.Addresses.Add(string.Empty);
-    }
-
-    private void RemoveAddress(int index)
-    {
-        if (index >= 0 && index < currentCustomer.Addresses.Count)
-        {
-            currentCustomer.Addresses.RemoveAt(index);
-        }
     }
 
     private async Task HandleSubmit()

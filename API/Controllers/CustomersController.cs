@@ -65,13 +65,15 @@ public class CustomersController : ControllerBase
      [FromQuery] string? firstName,
      [FromQuery] string? lastName,
      [FromQuery] string? email,
-     [FromQuery] string? phone)
+     [FromQuery] string? phone,
+     [FromQuery] string? adress)
     {
         if (id == null &&
             string.IsNullOrEmpty(firstName) &&
             string.IsNullOrEmpty(lastName) &&
             string.IsNullOrEmpty(email) &&
-            string.IsNullOrEmpty(phone))
+            string.IsNullOrEmpty(phone) &&
+            string.IsNullOrEmpty(adress))
         {
             return BadRequest("Please provide at least one search parameter");
         }
@@ -81,7 +83,8 @@ public class CustomersController : ControllerBase
             firstName: firstName,
             lastName: lastName,
             email: email,
-            phone: phone);
+            phone: phone,
+            adress: adress);
 
         return Ok(customers);
     }

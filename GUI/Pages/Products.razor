@@ -20,6 +20,7 @@ else
                 <th>Name</th>
                 <th>Description</th>
                 <th>Price</th>
+                <th>Discontinued</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -31,6 +32,16 @@ else
                     <td>@product.Name</td>
                     <td>@product.Description</td>
                     <td>@product.Price.ToString("C")</td>
+                    <td>
+                        @if (product.IsDiscontinued)
+                        {
+                            <span class="badge bg-danger">Discontinued</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Available</span>
+                        }
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-warning" @onclick="() => EditProduct(product)">Edit</button>
                         <button class="btn btn-sm btn-danger" @onclick="() => DeleteProduct(product.Id)">Delete</button>
@@ -68,6 +79,10 @@ else
                             <InputNumber id="price" class="form-control" @bind-Value="currentProduct.Price" />
                             <ValidationMessage For="@(() => currentProduct.Price)" />
                         </div>
+                        <div class="mb-3 form-check">
+                            <InputCheckbox id="isDiscontinued" class="form-check-input" @bind-Value="currentProduct.IsDiscontinued" />
+                            <label for="isDiscontinued" class="form-check-label">Discontinued</label>
+                        </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
                             <button type="submit" class="btn btn-primary">Save</button>
@@ -82,7 +97,10 @@ else
 @code {
     private List<Product>? products;
     private bool showModal = false;
-    private Product currentProduct = new();
+    private Product currentProduct = new()
+        {
+            IsDiscontinued = false
+        };
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,7 +114,10 @@ else
 
     private void ShowCreateModal()
     {
-        currentProduct = new Product();
+        currentProduct = new Product
+            {
+                IsDiscontinued = false
+            };
         showModal = true;
     }
 
@@ -107,23 +128,40 @@ else
                 Id = product.Id,
                 Name = product.Name,
                 Description = product.Description,
-                Price = product.Price
+                Price = product.Price,
+                IsDiscontinued = product.IsDiscontinued
             };
         showModal = true;
     }
 
     private async Task HandleSubmit()
     {
-        if (currentProduct.Id == 0)
+        try
         {
-            await ApiService.CreateProductAsync(currentProduct);
+            bool success;
+            if (currentProduct.Id == 0)
+            {
+                success = await ApiService.CreateProductAsync(currentProduct) != null;
+            }
+            else
+            {
+                success = await ApiService.UpdateProductAsync(currentProduct);
+            }
+
+            if (success)
+            {
+                await LoadProducts();
+                showModal = false;
+            }
+            else
+            {
+                Console.WriteLine("Failed to save product");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            await ApiService.UpdateProductAsync(currentProduct);
+            Console.WriteLine($"Error saving product: {ex.Message}");
         }
-        showModal = false;
-        await LoadProducts();
     }
 
     private async Task DeleteProduct(int id)
