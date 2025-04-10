@@ -3,6 +3,14 @@
 
 <h3>Orders</h3>
 
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <button type="button" class="btn-close float-end" @onclick="() => errorMessage = null"></button>
+        @errorMessage
+    </div>
+}
+
 @if (orders == null)
 {
     <p>Loading orders...</p>
@@ -43,6 +51,7 @@ else
 }
 
 @code {
+    private string? errorMessage;
     private List<Order>? orders;
 
     protected override async Task OnInitializedAsync()
@@ -65,9 +74,14 @@ else
 
     private async Task DeleteOrder(int id)
     {
-        if (await ApiService.DeleteOrderAsync(id))
+        var (success, error) = await ApiService.DeleteOrderAsync(id);
+        if (success)
         {
             await LoadOrders();
+        }
+        else
+        {
+            errorMessage = error ?? "Failed to delete order";
         }
     }
 

@@ -1,18 +1,26 @@
 ﻿@page "/products"
 @inject ApiService ApiService
+@inject ILogger<Products> Logger
 
 <h3>Products</h3>
 
+<!-- Add Product Button -->
 <div class="mb-3">
     <button class="btn btn-primary" @onclick="ShowCreateModal">Add New Product</button>
 </div>
 
+<!-- Loading State -->
 @if (products == null)
 {
-    <p>Loading products...</p>
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
 }
 else
 {
+    <!-- Products Table -->
     <table class="table table-striped">
         <thead>
             <tr>
@@ -20,7 +28,7 @@ else
                 <th>Name</th>
                 <th>Description</th>
                 <th>Price</th>
-                <th>Discontinued</th>
+                <th>Status</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -52,7 +60,7 @@ else
     </table>
 }
 
-<!-- Create/Edit Modal -->
+<!-- Product Modal -->
 @if (showModal)
 {
     <div class="modal show" style="display: block; background: rgba(0,0,0,0.5)">
@@ -65,27 +73,61 @@ else
                 <div class="modal-body">
                     <EditForm Model="@currentProduct" OnValidSubmit="@HandleSubmit">
                         <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger mb-3" />
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger mb-3">
+                                @errorMessage
+                            </div>
+                        }
+
+                        <!-- Product Form Fields -->
                         <div class="mb-3">
-                            <label for="name" class="form-label">Name</label>
-                            <InputText id="name" class="form-control" @bind-Value="currentProduct.Name" />
+                            <label class="form-label">Name *</label>
+                            <InputText class="form-control" @bind-Value="currentProduct.Name" />
                             <ValidationMessage For="@(() => currentProduct.Name)" />
                         </div>
+
                         <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <InputTextArea id="description" class="form-control" @bind-Value="currentProduct.Description" />
+                            <label class="form-label">Product Number</label>
+                            <InputText class="form-control" @bind-Value="currentProduct.ProductNumber" />
                         </div>
+
                         <div class="mb-3">
-                            <label for="price" class="form-label">Price</label>
-                            <InputNumber id="price" class="form-control" @bind-Value="currentProduct.Price" />
+                            <label class="form-label">Category</label>
+                            <InputText class="form-control" @bind-Value="currentProduct.Category" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea class="form-control" @bind-Value="currentProduct.Description" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Price *</label>
+                            <InputNumber class="form-control" @bind-Value="currentProduct.Price" />
                             <ValidationMessage For="@(() => currentProduct.Price)" />
                         </div>
+
                         <div class="mb-3 form-check">
-                            <InputCheckbox id="isDiscontinued" class="form-check-input" @bind-Value="currentProduct.IsDiscontinued" />
-                            <label for="isDiscontinued" class="form-check-label">Discontinued</label>
+                            <InputCheckbox class="form-check-input" @bind-Value="currentProduct.IsDiscontinued" />
+                            <label class="form-check-label">Discontinued</label>
                         </div>
+
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Save</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                                    <span> Saving...</span>
+                                }
+                                else
+                                {
+                                    <span>Save</span>
+                                }
+                            </button>
                         </div>
                     </EditForm>
                 </div>
@@ -97,10 +139,9 @@ else
 @code {
     private List<Product>? products;
     private bool showModal = false;
-    private Product currentProduct = new()
-        {
-            IsDiscontinued = false
-        };
+    private bool isSaving = false;
+    private string? errorMessage;
+    private Product currentProduct = new() { IsDiscontinued = false };
 
     protected override async Task OnInitializedAsync()
     {
@@ -109,15 +150,21 @@ else
 
     private async Task LoadProducts()
     {
-        products = await ApiService.GetProductsAsync();
+        try
+        {
+            products = await ApiService.GetProductsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading products");
+            errorMessage = "Failed to load products. Please try again.";
+        }
     }
 
     private void ShowCreateModal()
     {
-        currentProduct = new Product
-            {
-                IsDiscontinued = false
-            };
+        currentProduct = new Product { IsDiscontinued = false };
+        errorMessage = null;
         showModal = true;
     }
 
@@ -129,51 +176,50 @@ else
                 Name = product.Name,
                 Description = product.Description,
                 Price = product.Price,
-                IsDiscontinued = product.IsDiscontinued
+                IsDiscontinued = product.IsDiscontinued,
+                ProductNumber = product.ProductNumber,
+                Category = product.Category
             };
+        errorMessage = null;
         showModal = true;
     }
 
     private async Task HandleSubmit()
     {
-        try
-        {
-            bool success;
-            if (currentProduct.Id == 0)
-            {
-                success = await ApiService.CreateProductAsync(currentProduct) != null;
-            }
-            else
-            {
-                success = await ApiService.UpdateProductAsync(currentProduct);
-            }
+        isSaving = true;
+        errorMessage = null;
 
-            if (success)
-            {
-                await LoadProducts();
-                showModal = false;
-            }
-            else
-            {
-                Console.WriteLine("Failed to save product");
-            }
-        }
-        catch (Exception ex)
+        var result = await ApiService.SaveProductAsync(currentProduct);
+
+        if (result.success)
         {
-            Console.WriteLine($"Error saving product: {ex.Message}");
+            await LoadProducts();
+            showModal = false;
         }
+        else
+        {
+            errorMessage = result.error ?? "Failed to save product";
+        }
+
+        isSaving = false;
     }
 
     private async Task DeleteProduct(int id)
     {
-        if (await ApiService.DeleteProductAsync(id))
+        var (success, error) = await ApiService.DeleteProductAsync(id);
+        if (success)
         {
             await LoadProducts();
+        }
+        else
+        {
+            errorMessage = error ?? "Failed to delete product";
         }
     }
 
     private void CloseModal()
     {
         showModal = false;
+        errorMessage = null;
     }
 }

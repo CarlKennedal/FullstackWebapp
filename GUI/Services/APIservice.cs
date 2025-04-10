@@ -1,134 +1,271 @@
 using FullstackWebapp.Shared.Models;
 using System.Net.Http.Json;
-using System.Text.Json;
+using System.Net;
 
 namespace FullstackWebapp.GUI.Services;
 
 public class ApiService
 {
     private readonly HttpClient _http;
-    private readonly string _baseUrl;
+    private readonly ILogger<ApiService> _logger;
 
-    public ApiService(HttpClient http, IConfiguration config)
+    public ApiService(HttpClient http, ILogger<ApiService> logger)
     {
         _http = http;
-        _baseUrl = config["ApiBaseUrl"] ?? "https://localhost:7178;http://localhost:5166";
+        _logger = logger;
     }
 
     // ===== CUSTOMERS =====
     public async Task<List<Customer>> GetCustomersAsync()
     {
-        return await _http.GetFromJsonAsync<List<Customer>>($"{_baseUrl}/api/customers")
-               ?? new List<Customer>();
+        try
+        {
+            return await _http.GetFromJsonAsync<List<Customer>>("api/customers") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting customers");
+            return new();
+        }
     }
 
     public async Task<Customer?> GetCustomerByIdAsync(int id)
     {
-        return await _http.GetFromJsonAsync<Customer>($"{_baseUrl}/api/customers/{id}");
+        try
+        {
+            return await _http.GetFromJsonAsync<Customer>($"api/customers/{id}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error getting customer {id}");
+            return null;
+        }
     }
 
-    public async Task<Customer?> CreateCustomerAsync(Customer customer)
+    public async Task<(bool success, Customer? customer, string? error)> CreateCustomerAsync(Customer customer)
     {
-        var response = await _http.PostAsJsonAsync($"{_baseUrl}/api/customers", customer);
-        return await response.Content.ReadFromJsonAsync<Customer>();
+        try
+        {
+            var response = await _http.PostAsJsonAsync("api/customers", customer);
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, await response.Content.ReadFromJsonAsync<Customer>(), null);
+            }
+            return (false, null, await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating customer");
+            return (false, null, ex.Message);
+        }
     }
 
-    public async Task<bool> UpdateCustomerAsync(Customer customer)
+    public async Task<(bool success, string? error)> UpdateCustomerAsync(Customer customer)
     {
-        var response = await _http.PutAsJsonAsync($"{_baseUrl}/api/customers/{customer.Id}", customer);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await _http.PutAsJsonAsync($"api/customers/{customer.Id}", customer);
+            return (response.IsSuccessStatusCode,
+                   response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating customer {customer.Id}");
+            return (false, ex.Message);
+        }
     }
 
-    public async Task<bool> DeleteCustomerAsync(int id)
+    public async Task<(bool success, string? error)> DeleteCustomerAsync(int id)
     {
-        var response = await _http.DeleteAsync($"{_baseUrl}/api/customers/{id}");
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await _http.DeleteAsync($"api/customers/{id}");
+            return (response.IsSuccessStatusCode,
+                   response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting customer {id}");
+            return (false, ex.Message);
+        }
     }
 
-    public async Task<List<Customer>> SearchCustomersAsync(int? id, string? firstName, string? lastName, string? email, string? phone)
+    public async Task<(bool success, string? error)> SaveCustomerAsync(Customer customer)
     {
-        var queryParams = new List<string>();
-        if (id.HasValue) queryParams.Add($"id={id}");
-        if (!string.IsNullOrEmpty(firstName)) queryParams.Add($"firstName={firstName}");
-        if (!string.IsNullOrEmpty(lastName)) queryParams.Add($"lastName={lastName}");
-        if (!string.IsNullOrEmpty(email)) queryParams.Add($"email={email}");
-        if (!string.IsNullOrEmpty(phone)) queryParams.Add($"phone={phone}");
-
-        var queryString = queryParams.Any() ? $"?{string.Join("&", queryParams)}" : "";
-        return await _http.GetFromJsonAsync<List<Customer>>($"{_baseUrl}/api/customers/search{queryString}")
-               ?? new List<Customer>();
+        if (customer.Id == 0)
+        {
+            var createResult = await CreateCustomerAsync(customer);
+            return (createResult.success, createResult.error);
+        }
+        else
+        {
+            var updateResult = await UpdateCustomerAsync(customer);
+            return updateResult;
+        }
     }
 
     // ===== PRODUCTS =====
     public async Task<List<Product>> GetProductsAsync()
     {
-        return await _http.GetFromJsonAsync<List<Product>>($"{_baseUrl}/api/products")
-               ?? new List<Product>();
+        try
+        {
+            return await _http.GetFromJsonAsync<List<Product>>("api/products") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting products");
+            return new();
+        }
     }
 
     public async Task<Product?> GetProductAsync(string identifier)
     {
-        return await _http.GetFromJsonAsync<Product>($"{_baseUrl}/api/products/{identifier}");
+        try
+        {
+            return await _http.GetFromJsonAsync<Product>($"api/products/{identifier}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error getting product {identifier}");
+            return null;
+        }
     }
 
-    public async Task<Product?> CreateProductAsync(Product product)
+    public async Task<(bool success, Product? product, string? error)> CreateProductAsync(Product product)
     {
-        var response = await _http.PostAsJsonAsync($"{_baseUrl}/api/products", product);
-        return await response.Content.ReadFromJsonAsync<Product>();
+        try
+        {
+            var response = await _http.PostAsJsonAsync("api/products", product);
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, await response.Content.ReadFromJsonAsync<Product>(), null);
+            }
+            return (false, null, await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating product");
+            return (false, null, ex.Message);
+        }
     }
 
-    public async Task<bool> UpdateProductAsync(Product product)
+    public async Task<(bool success, string? error)> UpdateProductAsync(Product product)
     {
-        var response = await _http.PutAsJsonAsync($"{_baseUrl}/api/products/{product.Id}", product);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await _http.PutAsJsonAsync($"api/products/{product.Id}", product);
+            return (response.IsSuccessStatusCode,
+                   response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating product {product.Id}");
+            return (false, ex.Message);
+        }
     }
 
-    public async Task<bool> DeleteProductAsync(int id)
+    public async Task<(bool success, string? error)> DeleteProductAsync(int id)
     {
-        var response = await _http.DeleteAsync($"{_baseUrl}/api/products/{id}");
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await _http.DeleteAsync($"api/products/{id}");
+            return (response.IsSuccessStatusCode,
+                   response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting product {id}");
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<(bool success, string? error)> SaveProductAsync(Product product)
+    {
+        if (product.Id == 0)
+        {
+            var createResult = await CreateProductAsync(product);
+            return (createResult.success, createResult.error);
+        }
+        else
+        {
+            var updateResult = await UpdateProductAsync(product);
+            return updateResult;
+        }
     }
 
     // ===== ORDERS =====
     public async Task<List<Order>> GetOrdersAsync()
     {
-        return await _http.GetFromJsonAsync<List<Order>>($"{_baseUrl}/api/orders")
-               ?? new List<Order>();
+        try
+        {
+            return await _http.GetFromJsonAsync<List<Order>>("api/orders") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting orders");
+            return new();
+        }
     }
 
-    public async Task<Order?> CreateOrderAsync(Order order)
+    public async Task<(bool success, Order? order, string? error)> CreateOrderAsync(Order order)
     {
-        var response = await _http.PostAsJsonAsync($"{_baseUrl}/api/orders", order);
-        return await response.Content.ReadFromJsonAsync<Order>();
+        try
+        {
+            var response = await _http.PostAsJsonAsync("api/orders", order);
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, await response.Content.ReadFromJsonAsync<Order>(), null);
+            }
+            return (false, null, await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating order");
+            return (false, null, ex.Message);
+        }
     }
 
     public async Task<Order?> GetOrderByIdAsync(int id)
     {
-        var orders = await _http.GetFromJsonAsync<List<Order>>($"{_baseUrl}/api/orders/search?orderId={id}");
-        return orders?.FirstOrDefault();
+        try
+        {
+            var orders = await _http.GetFromJsonAsync<List<Order>>($"api/orders/search?orderId={id}");
+            return orders?.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error getting order {id}");
+            return null;
+        }
     }
 
-    public async Task<bool> UpdateOrderAsync(Order order)
+    public async Task<(bool success, string? error)> UpdateOrderAsync(Order order)
     {
-        var response = await _http.PutAsJsonAsync($"{_baseUrl}/api/orders/{order.Id}", order);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await _http.PutAsJsonAsync($"api/orders/{order.Id}", order);
+            return (response.IsSuccessStatusCode,
+                   response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating order {order.Id}");
+            return (false, ex.Message);
+        }
     }
 
-    public async Task<bool> DeleteOrderAsync(int id)
+    public async Task<(bool success, string? error)> DeleteOrderAsync(int id)
     {
-        var response = await _http.DeleteAsync($"{_baseUrl}/api/orders/{id}");
-        return response.IsSuccessStatusCode;
-    }
-
-    public async Task<List<Order>> SearchOrdersAsync(int? orderId, int? customerId, int? productId)
-    {
-        var queryParams = new List<string>();
-        if (orderId.HasValue) queryParams.Add($"orderId={orderId}");
-        if (customerId.HasValue) queryParams.Add($"customerId={customerId}");
-        if (productId.HasValue) queryParams.Add($"productId={productId}");
-
-        var queryString = queryParams.Any() ? $"?{string.Join("&", queryParams)}" : "";
-        return await _http.GetFromJsonAsync<List<Order>>($"{_baseUrl}/api/orders/search{queryString}")
-               ?? new List<Order>();
+        try
+        {
+            var response = await _http.DeleteAsync($"api/orders/{id}");
+            return (response.IsSuccessStatusCode,
+                   response.IsSuccessStatusCode ? null : await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error deleting order {id}");
+            return (false, ex.Message);
+        }
     }
 }

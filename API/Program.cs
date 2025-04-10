@@ -2,56 +2,41 @@ using FullstackWebapp.API.Data;
 using FullstackWebapp.API.Repositories;
 using FullstackWebapp.API.Services;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new() { Title = "FullstackWebapp API", Version = "v1" });
+builder.Services.AddSwaggerGen();
 
-
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-
-    if (File.Exists(xmlPath))
-    {
-        c.IncludeXmlComments(xmlPath);
-    }
-    else
-    {
-        Console.WriteLine($"Warning: XML documentation file not found at {xmlPath}");
-    }
-});
-
-
+// Database configuration
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Repository pattern
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped<ProductService>(); 
+
+// Application services
+builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<OrderService>();
 
+// CORS configuration
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins(
-                "https://localhost:7040", // API HTTPS
-                "http://localhost:5250",  // API HTTP
-                "https://localhost:5001", // Common GUI ports
-                "http://localhost:5000"
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        policy.WithOrigins("https://localhost:5001") // GUI address
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -60,10 +45,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseRouting();
+app.UseCors("AllowBlazorClient");
 app.UseAuthorization();
 app.MapControllers();
 
-app.MapGet("/health", () => Results.Ok("API is healthy"));
+// Health check endpoint
+app.MapGet("/health", () => "API is healthy");
+app.MapGet("/", () => "API is running");
 
 app.Run();
